@@ -3,7 +3,19 @@
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Monitor, Dumbbell, Flower2, Palette, Music, Sparkles } from "lucide-react";
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { facilityService } from "@/services";
+
+import { getImageUrl } from "@/utils/imageHelper";
+
+const ICON_MAP = {
+  Monitor,
+  Dumbbell,
+  Flower2,
+  Palette,
+  Music,
+  Sparkles
+};
 
 /**
  * Facility Card component with Parallax tilt effect
@@ -37,6 +49,8 @@ const FacilityCard = ({ facility, index }) => {
     y.set(0);
   };
 
+  const IconComp = ICON_MAP[facility.icon] || Sparkles;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -56,7 +70,7 @@ const FacilityCard = ({ facility, index }) => {
       {/* Background Image with Zoom */}
       <div className="absolute inset-0 z-0 transition-transform duration-1000 ease-out group-hover:scale-110" style={{ transform: "translateZ(0)" }}>
         <Image
-          src={facility.image}
+          src={getImageUrl(facility.image)}
           alt={facility.name}
           fill
           className="object-cover"
@@ -71,7 +85,7 @@ const FacilityCard = ({ facility, index }) => {
       >
         <div className="flex items-center space-x-3 mb-2">
           <div className={`p-2.5 rounded-xl bg-gradient-to-br ${facility.color} text-white shadow-lg`}>
-            <facility.Icon size={18} />
+            <IconComp size={18} />
           </div>
           <h3 className="text-xl font-black text-white">{facility.name}</h3>
         </div>
@@ -87,43 +101,26 @@ const FacilityCard = ({ facility, index }) => {
 };
 
 const Facilities = () => {
-  const facilities = [
-    {
-      name: "Smart Classrooms",
-      description: "Interactive AI-powered learning environments designed to spark curiosity and digital fluency.",
-      Icon: Monitor,
-      image: "/images/facility-classroom.png",
-      color: "from-blue-500 to-indigo-600",
-    },
-    {
-      name: "Indoor Activity Zone",
-      description: "A safe, futuristic indoor space for social interaction, soft play, and collaborative games.",
-      Icon: Dumbbell,
-      image: "/images/facility-indoor.png",
-      color: "from-emerald-500 to-teal-600",
-    },
-    {
-      name: "Outdoor Playground",
-      description: "Safety-first recreational area featuring modern play equipment and lush green surroundings.",
-      Icon: Flower2,
-      image: "/images/facility-outdoor.png",
-      color: "from-amber-500 to-orange-600",
-    },
-    {
-      name: "Creative Art Room",
-      description: "A vibrant studio for traditional painting and digital art, encouraging aesthetic expression.",
-      Icon: Palette,
-      image: "/images/facility-art.png",
-      color: "from-rose-500 to-pink-600",
-    },
-    {
-      name: "Music & Dance Studio",
-      description: "A modern studio for rhythm, melody, and movement, fostering creative potential in performers.",
-      Icon: Music,
-      image: "/images/facility-music.png",
-      color: "from-purple-500 to-violet-600",
-    },
-  ];
+  const [facilities, setFacilities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFacilities = async () => {
+      try {
+        const res = await facilityService.getAll();
+        if (res.success) {
+          setFacilities(res.data);
+        }
+      } catch (error) {
+        console.error('Facilities fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFacilities();
+  }, []);
+
+  if (loading) return null; // Or a skeleton
 
   return (
     <section className="py-24 bg-[#F8FAFF] relative overflow-hidden">
@@ -161,23 +158,17 @@ const Facilities = () => {
           </motion.p>
         </div>
 
-        {/* Facilities Grid - Staggered Layout Inspiration */}
+        {/* Dynamic Facilities Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
-          <div className="lg:col-span-3 rounded-[40px] overflow-hidden">
-            <FacilityCard facility={facilities[0]} index={0} />
-          </div>
-          <div className="lg:col-span-3 rounded-[40px] overflow-hidden">
-            <FacilityCard facility={facilities[1]} index={1} />
-          </div>
-          <div className="lg:col-span-2">
-            <FacilityCard facility={facilities[2]} index={2} />
-          </div>
-          <div className="lg:col-span-2">
-            <FacilityCard facility={facilities[3]} index={3} />
-          </div>
-          <div className="lg:col-span-2">
-            <FacilityCard facility={facilities[4]} index={4} />
-          </div>
+          {facilities.map((facility, index) => {
+            // Calculate grid span: First two items span 3, others span 2
+            const spanClass = index < 2 ? "lg:col-span-3" : "lg:col-span-2";
+            return (
+              <div key={facility._id} className={`${spanClass} rounded-[40px] overflow-hidden`}>
+                <FacilityCard facility={facility} index={index} />
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { publicApi } from "@/services/api";
+import { admissionService } from "@/services";
 
 const AdmissionPage = () => {
   const [formData, setFormData] = useState({
@@ -21,20 +21,22 @@ const AdmissionPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await publicApi.submitAdmission(formData);
-      setSuccess(true);
-      setFormData({
-        studentName: "",
-        dateOfBirth: "",
-        classApplying: "",
-        parentName: "",
-        phone: "",
-        email: "",
-        address: "",
-      });
+      const res = await admissionService.submit(formData);
+      if (res.success) {
+        setSuccess(true);
+        setFormData({
+            studentName: "",
+            dateOfBirth: "",
+            classApplying: "",
+            parentName: "",
+            phone: "",
+            email: "",
+            address: "",
+        });
+      }
     } catch (error) {
       console.error("Submission failed", error);
-      alert("Something went wrong. Please try again.");
+      alert(error.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

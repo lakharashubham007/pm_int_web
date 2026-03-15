@@ -1,45 +1,76 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
-import { X, ZoomIn, Camera, Sparkles, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, ZoomIn, Camera, Sparkles, Filter, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 /**
- * School Gallery Section
- * Features: Category filtering, Hover zoom, Lightbox viewer, Sparkle effects.
+ * School Gallery Section (Dynamic)
+ * Features: API Integration, pagination, category filtering, Lightbox viewer.
  */
 const Gallery = () => {
   const [filter, setFilter] = useState("All");
   const [selectedImage, setSelectedImage] = useState(null);
+  const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const categories = ["All", "Events", "Sports", "Activities", "Classrooms"];
 
-  const galleryItems = [
-    { id: 1, category: "Events", image: "/images/gallery-event-1.png", title: "Annual Day 2026" },
-    { id: 2, category: "Sports", image: "/images/gallery-sport-1.png", title: "Morning Yoga Session" },
-    { id: 3, category: "Activities", image: "/images/gallery-activity-1.png", title: "Young Scientists at Work" },
-    { id: 4, category: "Classrooms", image: "/images/gallery-classroom-1.png", title: "Storytelling Hour" },
-    { id: 5, category: "Events", image: "/images/gallery-event-2.png", title: "Graduation Ceremony" },
-    { id: 6, category: "Activities", image: "/images/gallery-activity-2.png", title: "Future Gardeners" },
-  ];
+  useEffect(() => {
+    fetchGallery(true);
+  }, [filter]);
 
-  const filteredItems = filter === "All" 
-    ? galleryItems 
-    : galleryItems.filter(item => item.category === filter);
+  const fetchGallery = async (reset = false) => {
+    const currentPage = reset ? 1 : page + 1;
+    if (reset) setIsLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const query = new URLSearchParams({
+        page: currentPage,
+        limit: 12,
+        category: filter,
+      }).toString();
+
+      const response = await fetch(`${baseUrl}/gallery?${query}`);
+      const data = await response.json();
+
+      if (data.items) {
+        setItems(prev => reset ? data.items : [...prev, ...data.items]);
+        setPage(data.page);
+        setHasMore(data.page < data.pages);
+      }
+    } catch (error) {
+      console.error("Gallery Fetch Error:", error);
+    } finally {
+      setIsLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const getFullImgUrl = (path) => {
+      if (!path) return "";
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace('/api', '');
+      return path.startsWith('http') ? path : `${baseUrl}/uploads/hero/${path}`;
+  };
 
   const handleNext = (e) => {
     e.stopPropagation();
-    const currentIndex = filteredItems.findIndex(item => item.id === selectedImage.id);
-    const nextIndex = (currentIndex + 1) % filteredItems.length;
-    setSelectedImage(filteredItems[nextIndex]);
+    const currentIndex = items.findIndex(item => item._id === selectedImage._id);
+    const nextIndex = (currentIndex + 1) % items.length;
+    setSelectedImage(items[nextIndex]);
   };
 
   const handlePrev = (e) => {
     e.stopPropagation();
-    const currentIndex = filteredItems.findIndex(item => item.id === selectedImage.id);
-    const prevIndex = (currentIndex - 1 + filteredItems.length) % filteredItems.length;
-    setSelectedImage(filteredItems[prevIndex]);
+    const currentIndex = items.findIndex(item => item._id === selectedImage._id);
+    const prevIndex = (currentIndex - 1 + items.length) % items.length;
+    setSelectedImage(items[prevIndex]);
   };
 
   return (
@@ -91,55 +122,66 @@ const Gallery = () => {
         </div>
 
         {/* Gallery Grid */}
-        <motion.div 
-            layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
-            <AnimatePresence mode="popLayout">
-                {filteredItems.map((item, index) => (
-                    <motion.div
-                        key={item.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.5 }}
-                        className="group relative h-80 rounded-[32px] overflow-hidden cursor-pointer shadow-xl"
-                        onClick={() => setSelectedImage(item)}
-                    >
-                        {/* Image */}
-                        <Image
-                            src={item.image}
-                            alt={item.title}
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                        
-                        {/* Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+        {isLoading ? (
+            <div className="flex justify-center items-center h-80">
+                <Loader2 className="animate-spin text-primary" size={48} />
+            </div>
+        ) : (
+            <>
+                <motion.div 
+                    layout
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+                >
+                    <AnimatePresence mode="popLayout">
+                        {items.map((item, index) => (
                             <motion.div
-                                initial={{ y: 20 }}
-                                whileHover={{ y: 0 }}
-                                className="flex items-center justify-between"
+                                key={item._id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.5 }}
+                                className="group relative h-80 rounded-[32px] overflow-hidden cursor-pointer shadow-xl"
+                                onClick={() => setSelectedImage(item)}
                             >
-                                <div>
-                                    <span className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] mb-2 block">{item.category}</span>
-                                    <h4 className="text-white font-bold text-lg">{item.title}</h4>
-                                </div>
-                                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">
-                                    <ZoomIn size={20} />
+                                <Image
+                                    src={getFullImgUrl(item.imageUrl)}
+                                    alt={item.title}
+                                    fill
+                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+                                
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <span className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] mb-2 block">{item.category}</span>
+                                            <h4 className="text-white font-bold text-lg">{item.title}</h4>
+                                        </div>
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">
+                                            <ZoomIn size={20} />
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
-                        </div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
 
-                        {/* Subtle Sparkle on Hover */}
-                        <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                            <Sparkles className="text-accent-yellow animate-pulse" size={24} fill="currentColor" />
-                        </div>
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-        </motion.div>
+                {hasMore && (
+                    <div className="mt-16 flex justify-center">
+                        <button
+                            onClick={() => fetchGallery()}
+                            disabled={loadingMore}
+                            className="group relative px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest overflow-hidden shadow-2xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                        >
+                            <span className="relative z-10 flex items-center space-x-2">
+                                {loadingMore ? <Loader2 className="animate-spin" size={18} /> : <span>Load More Moments</span>}
+                            </span>
+                        </button>
+                    </div>
+                )}
+            </>
+        )}
       </div>
 
       {/* Lightbox Modal */}
@@ -182,9 +224,8 @@ const Gallery = () => {
               </motion.button>
             </div>
 
-            {/* Main Image Container */}
             <motion.div
-              layoutId={selectedImage.id}
+              layoutId={selectedImage._id}
               initial={{ scale: 0.8, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 20 }}
@@ -193,7 +234,7 @@ const Gallery = () => {
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={selectedImage.id}
+                  key={selectedImage._id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -201,7 +242,7 @@ const Gallery = () => {
                   className="relative w-full h-full"
                 >
                   <Image
-                    src={selectedImage.image}
+                    src={getFullImgUrl(selectedImage.imageUrl)}
                     alt={selectedImage.title}
                     fill
                     className="object-cover"

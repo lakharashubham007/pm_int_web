@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { X, ZoomIn, Camera, Sparkles, Filter, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { getImageUrl } from "@/utils/imageHelper";
 
 /**
  * School Gallery Section (Dynamic)
@@ -54,9 +55,7 @@ const Gallery = () => {
   };
 
   const getFullImgUrl = (path) => {
-    if (!path) return "";
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace('/api', '');
-    return path.startsWith('http') ? path : `${baseUrl}/uploads/hero/${path}`;
+    return getImageUrl(path);
   };
 
   const handleNext = (e) => {
@@ -110,8 +109,8 @@ const Gallery = () => {
                 transition={{ delay: i * 0.1 }}
                 onClick={() => setFilter(cat)}
                 className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === cat
-                    ? "bg-primary text-white shadow-xl shadow-primary/20 scale-105"
-                    : "bg-primary/5 text-primary/60 hover:bg-primary/10"
+                  ? "bg-primary text-white shadow-xl shadow-primary/20 scale-105"
+                  : "bg-primary/5 text-primary/60 hover:bg-primary/10"
                   }`}
               >
                 {cat}

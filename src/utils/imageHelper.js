@@ -1,5 +1,5 @@
 export const getBackendUrl = () => {
-    return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
+    return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:5000';
 };
 
 export function getImageUrl(imagePath) {

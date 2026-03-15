@@ -11,7 +11,7 @@ export function getImageUrl(imagePath) {
     }
 
     const backendUrl = getBackendUrl();
-    
+
     // Normalize path to have leading slash but no double slashes when prepending backendUrl
     const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
 

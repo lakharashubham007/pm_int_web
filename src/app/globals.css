@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1E3A8A;
+  --color-secondary: #87CEEB;
+  --color-accent-red: #EF4444;
+  --color-accent-yellow: #FACC15;
+  --color-accent-green: #22C55E;
+  --color-accent-purple: #8B5CF6;
+  --color-background: #EAF6FF;
+}
+
+body {
+  color: var(--color-primary);
+  background: var(--color-background);
+  overflow-x: hidden;
+}
+
+.rainbow-gradient {
+  background: linear-gradient(
+    to right,
+    var(--color-accent-red),
+    var(--color-accent-yellow),
+    var(--color-accent-green),
+    var(--color-accent-purple)
+  );
+}
+
+.rainbow-text {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(
+    to right,
+    var(--color-accent-red),
+    var(--color-accent-yellow),
+    var(--color-accent-green),
+    var(--color-accent-purple)
+  );
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
